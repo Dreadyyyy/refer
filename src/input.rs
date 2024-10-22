@@ -39,12 +39,13 @@ impl EntryBox {
     }
 
     pub fn complete(&mut self) {
-        if !self.input_buff.starts_with("./") {
+        if !self.input_buff.starts_with("/") {
             self.input_buff = "./".to_string() + &self.input_buff;
         }
 
         let path: Vec<&str> = self.input_buff.split("/").collect();
-        let path = &path[..path.len().saturating_sub(1)].join("/");
+        let path = path[..path.len().saturating_sub(1)].join("/") + "/";
+        log::trace!("Called complete for the following path: {}", path);
 
         let Ok(filenames) = read_dir(path) else {
             return;
@@ -54,10 +55,13 @@ impl EntryBox {
             .map(|file| file.path().display().to_string())
             .collect();
 
-        self.input_buff = complete(filenames, &self.input_buff)
-            .strip_prefix("./")
-            .expect("File path string should always start with ./")
-            .to_string();
+        let new_buff = complete(filenames, &self.input_buff);
+        let new_buff = match new_buff.strip_prefix("./") {
+            Some(s) => s.to_string(),
+            None => new_buff,
+        };
+
+        self.input_buff = new_buff;
     }
 
     pub fn pop(&mut self) {
