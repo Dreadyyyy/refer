@@ -1,13 +1,14 @@
+use std::fs::read_dir;
+
 use anyhow::anyhow;
 use crossterm::event::*;
-use io::FileBuf;
 use ratatui::widgets::*;
-use std::fs::read_dir;
-use utils::complete;
 
 use crate::cursor::*;
 use crate::resource::*;
 use crate::*;
+use io::FileBuf;
+use utils::complete;
 
 pub const DELTA: u64 = 16;
 
@@ -45,14 +46,12 @@ impl EntryBox {
         let path: Vec<&str> = self.input_buff.split("/").collect();
         let path = &path[..path.len().saturating_sub(1)].join("/");
 
-        let filenames = match read_dir(path) {
-            Ok(f) => f,
-            Err(_) => return,
+        let Ok(filenames) = read_dir(path) else {
+            return;
         };
         let filenames = filenames
-            .into_iter()
-            .filter(|file| file.is_ok())
-            .map(|file| file.unwrap().path().display().to_string())
+            .filter_map(|file| file.ok())
+            .map(|file| file.path().display().to_string())
             .collect();
 
         self.input_buff = complete(filenames, &self.input_buff)
