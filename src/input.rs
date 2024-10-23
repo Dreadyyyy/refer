@@ -39,11 +39,13 @@ impl EntryBox {
     }
 
     pub fn complete(&mut self) {
-        if !self.input_buff.starts_with("/") {
-            self.input_buff = "./".to_string() + &self.input_buff;
-        }
+        let mut new_buff = if self.input_buff.starts_with("/") {
+            self.input_buff.to_string()
+        } else {
+            "./".to_string() + &self.input_buff
+        };
 
-        let path: Vec<&str> = self.input_buff.split("/").collect();
+        let path: Vec<&str> = new_buff.split("/").collect();
         let path = path[..path.len().saturating_sub(1)].join("/") + "/";
 
         let Ok(filenames) = read_dir(path) else {
@@ -62,8 +64,8 @@ impl EntryBox {
             })
             .collect();
 
-        let new_buff = complete(filenames, &self.input_buff);
-        let new_buff = match new_buff.strip_prefix("./") {
+        new_buff = complete(filenames, &new_buff);
+        new_buff = match new_buff.strip_prefix("./") {
             Some(s) => s.to_string(),
             None => new_buff,
         };
