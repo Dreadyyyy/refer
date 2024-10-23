@@ -45,14 +45,21 @@ impl EntryBox {
 
         let path: Vec<&str> = self.input_buff.split("/").collect();
         let path = path[..path.len().saturating_sub(1)].join("/") + "/";
-        log::trace!("Called complete for the following path: {}", path);
 
         let Ok(filenames) = read_dir(path) else {
             return;
         };
         let filenames = filenames
             .filter_map(|file| file.ok())
-            .map(|file| file.path().display().to_string())
+            .map(|file| {
+                let is_dir = if let Ok(md) = file.metadata() {
+                    md.is_dir()
+                } else {
+                    false
+                };
+
+                file.path().display().to_string() + if is_dir { "/" } else { "" }
+            })
             .collect();
 
         let new_buff = complete(filenames, &self.input_buff);
